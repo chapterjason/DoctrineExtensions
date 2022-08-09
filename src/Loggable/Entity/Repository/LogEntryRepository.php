@@ -9,6 +9,7 @@
 
 namespace Gedmo\Loggable\Entity\Repository;
 
+use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Query;
@@ -132,6 +133,11 @@ class LogEntryRepository extends EntityRepository
     protected function mapValue(ClassMetadata $objectMeta, $field, &$value)
     {
         if (!$objectMeta->isSingleValuedAssociation($field)) {
+            $fieldType = $objectMeta->getTypeOfField($field);
+            $type = Type::getType($fieldType);
+
+            $value = $type->convertToPHPValue($value, $this->_em->getConnection()->getDatabasePlatform());
+
             return;
         }
 

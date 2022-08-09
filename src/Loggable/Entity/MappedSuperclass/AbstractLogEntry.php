@@ -73,9 +73,9 @@ abstract class AbstractLogEntry
     /**
      * @var array|null
      *
-     * @ORM\Column(type="array", nullable=true)
+     * @ORM\Column(type="json", nullable=true)
      */
-    #[ORM\Column(type: Types::ARRAY, nullable: true)]
+    #[ORM\Column(type: Types::JSON, nullable: true)]
     protected $data;
 
     /**

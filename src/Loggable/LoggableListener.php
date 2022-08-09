@@ -10,6 +10,7 @@
 namespace Gedmo\Loggable;
 
 use Doctrine\Common\EventArgs;
+use Doctrine\DBAL\Types\Type;
 use Doctrine\Persistence\Event\LoadClassMetadataEventArgs;
 use Doctrine\Persistence\ObjectManager;
 use Gedmo\Loggable\Mapping\Event\LoggableAdapter;
@@ -249,20 +250,26 @@ class LoggableListener extends MappedEventSubscriber
                 continue;
             }
             $value = $changes[1];
-            if ($meta->isSingleValuedAssociation($field) && $value) {
-                if ($wrapped->isEmbeddedAssociation($field)) {
-                    $value = $this->getObjectChangeSetData($ea, $value, $logEntry);
-                } else {
-                    $oid = spl_object_id($value);
-                    $wrappedAssoc = AbstractWrapper::wrap($value, $om);
-                    $value = $wrappedAssoc->getIdentifier(false);
-                    if (!is_array($value) && !$value) {
-                        $this->pendingRelatedObjects[$oid][] = [
-                            'log' => $logEntry,
-                            'field' => $field,
-                        ];
+            if ($meta->isSingleValuedAssociation($field)) {
+                if ($value) {
+                    if ($wrapped->isEmbeddedAssociation($field)) {
+                        $value = $this->getObjectChangeSetData($ea, $value, $logEntry);
+                    } else {
+                        $oid = spl_object_id($value);
+                        $wrappedAssoc = AbstractWrapper::wrap($value, $om);
+                        $value = $wrappedAssoc->getIdentifier(false);
+                        if (!is_array($value) && !$value) {
+                            $this->pendingRelatedObjects[$oid][] = [
+                                'log' => $logEntry,
+                                'field' => $field,
+                            ];
+                        }
                     }
                 }
+            } else {
+                $typeName = $meta->getTypeOfField($field);
+                $type = Type::getType($typeName);
+                $value = $type->convertToDatabaseValue($value, $om->getConnection()->getDatabasePlatform());
             }
             $newValues[$field] = $value;
         }
